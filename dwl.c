@@ -396,7 +396,8 @@ static Atom netatom[NetLast];
 void
 applybounds(Client *c, struct wlr_box *bbox)
 {
-	if (!c->isfullscreen) {
+	if ((!c->isfullscreen && c->isfloating)
+			|| (c->mon && !c->mon->lt[c->mon->sellt]->arrange)) {
 		struct wlr_box min = {0}, max = {0};
 		client_get_size_hints(c, &max, &min);
 		/* try to set size hints */
