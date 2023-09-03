@@ -10,8 +10,8 @@ static const unsigned int gappih           = 5; /* horiz inner gap between windo
 static const unsigned int gappiv           = 5; /* vert inner gap between windows */
 static const unsigned int gappoh           = 5; /* horiz outer gap between windows and screen edge */
 static const unsigned int gappov           = 5; /* vert outer gap between windows and screen edge */
-static const float bordercolor[]           = {0.5, 0.5, 0.5, 1};
-static const float focuscolor[]            = {1.0, 0.0, 0.0, 1};
+static const float bordercolor[]           = {0.5, 0.5, 0.5, 0};
+static const float focuscolor[]            = {1.0, 0.0, 0.0, 0};
 /* To conform the xdg-protocol, set the alpha to zero to restore the old behavior */
 static const float fullscreen_bg[]         = {0.1, 0.1, 0.1, 1.0};
 
@@ -19,11 +19,13 @@ static const float fullscreen_bg[]         = {0.1, 0.1, 0.1, 1.0};
 static const char *const autostart[] = {
 	"systemctl", "--user", "import-environment", "WAYLAND_DISPLAY", "XDG_CURRENT_DESKTOP", NULL,
         "dbus-update-activation-environment", "--systemd", "WAYLAND_DISPLAY", "XDG_CURRENT_DESKTOP=dwl", NULL,
+        "waybar", NULL,
         "swaybg", "-o", "*", "-i", "/usr/share/backgrounds/f30/extras/i-see-stars.jpg", "-m", "fill", NULL,
-        "someblocks", NULL,
         "blueman-applet", NULL,
+		"fcitx5", NULL,
         "nm-applet", NULL,
         "dunst", NULL,
+		"/usr/libexec/polkit-gnome-authentication-agent-1", NULL,
         "dropbox", "start", "-i", NULL,
         "wljoywake", NULL,
         NULL /* terminate */
@@ -37,7 +39,8 @@ static const Rule rules[] = {
 	/* examples:
 	{ "Gimp",     NULL,       0,            1,           -1 },
 	*/
-	{ "firefox",  NULL,       1 << 8,       0,           -1 },
+//	{ "firefox",  NULL,       1 << 8,       0,           -1 },
+	{ "Gimp",     NULL,       0,            1,           -1 },
 };
 
 /* layout(s) */
@@ -194,8 +197,8 @@ static const Key keys[] = {
 	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_parenright, tag,            {.ui = ~0} },
 	{ MODKEY,                    XKB_KEY_w,          focusmon,       {.i = WLR_DIRECTION_LEFT} },
 	{ MODKEY,                    XKB_KEY_e,          focusmon,       {.i = WLR_DIRECTION_RIGHT} },
-	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_less,       tagmon,         {.i = WLR_DIRECTION_LEFT} },
-	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_greater,    tagmon,         {.i = WLR_DIRECTION_RIGHT} },
+	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_W,       tagmon,         {.i = WLR_DIRECTION_LEFT} },
+	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_E,    tagmon,         {.i = WLR_DIRECTION_RIGHT} },
 	TAGKEYS(          XKB_KEY_1, XKB_KEY_exclam,                     0),
 	TAGKEYS(          XKB_KEY_2, XKB_KEY_at,                         1),
 	TAGKEYS(          XKB_KEY_3, XKB_KEY_numbersign,                 2),
