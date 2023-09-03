@@ -329,6 +329,7 @@ static void updatetitle(struct wl_listener *listener, void *data);
 static void urgent(struct wl_listener *listener, void *data);
 static void view(const Arg *arg);
 static void virtualkeyboard(struct wl_listener *listener, void *data);
+static void warpcursortoclient(Client *c);
 static Monitor *xytomon(double x, double y);
 static void xytonode(double x, double y, struct wlr_surface **psurface,
 		Client **pc, LayerSurface **pl, double *nx, double *ny);
@@ -507,6 +508,8 @@ arrange(Monitor *m)
 	if (m->lt[m->sellt]->arrange)
 		m->lt[m->sellt]->arrange(m);
 	motionnotify(0);
+
+	if (c && mousefollowsfocus) warpcursortoclient(c);
 	checkidleinhibitor(NULL);
 }
 
@@ -1338,11 +1341,16 @@ void
 focusmon(const Arg *arg)
 {
 	int i = 0, nmons = wl_list_length(&mons);
+	Client *c = NULL;
 	if (nmons)
 		do /* don't switch to disabled mons */
 			selmon = dirtomon(arg->i);
 		while (!selmon->wlr_output->enabled && i++ < nmons);
-	focusclient(focustop(selmon), 1);
+
+	c = focustop(selmon);
+	focusclient(c, 1);
+
+	if (mousefollowsfocus) warpcursortoclient(c);
 }
 
 void
@@ -1369,6 +1377,7 @@ focusstack(const Arg *arg)
 	}
 	/* If only one client is visible on selmon, then c == sel */
 	focusclient(c, 1);
+	if (mousefollowsfocus) warpcursortoclient(c);
 }
 
 /* We probably should change the name of this, it sounds like
@@ -2794,6 +2803,16 @@ virtualkeyboard(struct wl_listener *listener, void *data)
 {
 	struct wlr_virtual_keyboard_v1 *keyboard = data;
 	createkeyboard(&keyboard->keyboard);
+}
+
+void
+warpcursortoclient(Client *c) {
+	struct wlr_box mg = c->mon->m;
+	struct wlr_box cg = c->geom;
+	if (!VISIBLEON(c, selmon)) return;
+	wlr_cursor_warp_absolute(cursor, NULL,
+		((double)cg.x + (double)cg.width / 2.0) / (double)mg.width,
+		((double)cg.y + (double)cg.height / 2.0) / (double)mg.height);
 }
 
 Monitor *
