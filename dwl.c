@@ -1350,7 +1350,27 @@ focusmon(const Arg *arg)
 	c = focustop(selmon);
 	focusclient(c, 1);
 
-	if (mousefollowsfocus) warpcursortoclient(c);
+	int max_x = 0, max_y = 0;
+	Monitor *m;
+	struct wlr_box m_area;
+	wl_list_for_each(m, &mons, link) {
+		m_area = m->m;
+		if ((m_area.x + m_area.width) > max_x) {
+			max_x = (m_area.x + m_area.width);
+		}
+		if ((m_area.y + m_area.height) > max_y) {
+			max_y = (m_area.y + m_area.height);
+		}
+	}
+	if (mousefollowsfocus) {
+		if (c) {
+			warpcursortoclient(c);
+		} else {
+			wlr_cursor_warp_absolute(cursor, NULL,
+			((double)selmon->m.x + ((double)selmon->m.width) / 2.0) / (double)max_x,
+			((double)selmon->m.y + ((double)selmon->m.height) / 2.0) / (double)max_y);
+		}
+	}
 }
 
 void
@@ -2807,12 +2827,26 @@ virtualkeyboard(struct wl_listener *listener, void *data)
 
 void
 warpcursortoclient(Client *c) {
-	struct wlr_box mg = c->mon->m;
+	if (!c) return;
+
+	int max_x = 0, max_y = 0;
+	Monitor *m;
+	struct wlr_box m_area;
+	wl_list_for_each(m, &mons, link) {
+		m_area = m->m;
+		if ((m_area.x + m_area.width) > max_x) {
+			max_x = (m_area.x + m_area.width);
+		}
+		if ((m_area.y + m_area.height) > max_y) {
+			max_y = (m_area.y + m_area.height);
+		}
+	}
+
 	struct wlr_box cg = c->geom;
 	if (!VISIBLEON(c, selmon)) return;
 	wlr_cursor_warp_absolute(cursor, NULL,
-		((double)cg.x + (double)cg.width / 2.0) / (double)mg.width,
-		((double)cg.y + (double)cg.height / 2.0) / (double)mg.height);
+		((double)cg.x + (double)cg.width / 2.0) / (double)max_x,
+		((double)cg.y + (double)cg.height / 2.0) / (double)max_y);
 }
 
 Monitor *
