@@ -25,7 +25,8 @@ static const char *const autostart[] = {
 		"fcitx5", NULL,
         "nm-applet", NULL,
         "dunst", NULL,
-		"/usr/libexec/polkit-gnome-authentication-agent-1", NULL,
+        "imwheel", NULL,
+	"/usr/libexec/polkit-gnome-authentication-agent-1", NULL,
         "dropbox", "start", "-i", NULL,
         "wljoywake", NULL,
         NULL /* terminate */
@@ -51,16 +52,19 @@ static const Layout layouts[] = {
 	{ "[M]",      monocle },
 };
 
-/* monitors */
+
+/* monitors
+ * The order in which monitors are defined determines their position.
+ * Non-configured monitors are always added to the left. */
 static const MonitorRule monrules[] = {
-	/* name       mfact nmaster scale layout       rotate/reflect                x    y */
-	/* example of a HiDPI laptop monitor:
-	{ "eDP-1",    0.5,  1,      2,    &layouts[0], WL_OUTPUT_TRANSFORM_NORMAL,   -1,  -1 },
+	/* name       mfact nmaster scale layout       rotate/reflect              x  y  resx resy rate adaptive*/
+	/* example of a HiDPI laptop monitor at 120Hz:
+	{ "eDP-1",    0.5,  1,      2,    &layouts[0], WL_OUTPUT_TRANSFORM_NORMAL, 0, 0, 0, 0, 120.000, 1},
 	*/
-	{ "DP-3",    0.5,  1,      1,    &layouts[0], WL_OUTPUT_TRANSFORM_NORMAL,   0,  0 },
-	{ "DP-4",    0.5,  1,      1,    &layouts[0], WL_OUTPUT_TRANSFORM_NORMAL,   2560,  0 },
+	{ "DP-3",    0.5,  1,      1,    &layouts[0], WL_OUTPUT_TRANSFORM_NORMAL,   0,  0, 2560, 1440, 165.080002, 1 },
+	{ "DP-4",    0.5,  1,      1,    &layouts[0], WL_OUTPUT_TRANSFORM_NORMAL,   2560,  0, 2560, 1440, 59.951000, 0 },
 	/* defaults */
-	{ NULL,       0.55, 1,      1,    &layouts[0], WL_OUTPUT_TRANSFORM_NORMAL,   -1,  -1 },
+	{ NULL,       0.55, 1,      1,    &layouts[0], WL_OUTPUT_TRANSFORM_NORMAL, 0, 0, 0, 0, 0, 1},
 };
 
 /* keyboard */

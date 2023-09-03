@@ -213,6 +213,10 @@ typedef struct {
 	const Layout *lt;
 	enum wl_output_transform rr;
 	int x, y;
+	int resx;
+	int resy;
+	float rate;
+	int adaptive;
 } MonitorRule;
 
 typedef struct {
@@ -993,7 +997,6 @@ createmon(struct wl_listener *listener, void *data)
 	m->wlr_output = wlr_output;
 
     wl_list_init(&m->dwl_ipc_outputs);
-	wlr_output_init_render(wlr_output, alloc, drw);
 
 	/* Initialize monitor state using configured rules */
 	for (i = 0; i < LENGTH(m->layers); i++)
@@ -1012,17 +1015,16 @@ createmon(struct wl_listener *listener, void *data)
 			wlr_xcursor_manager_load(cursor_mgr, r->scale);
 			m->lt[0] = m->lt[1] = r->lt;
 			wlr_output_set_transform(wlr_output, r->rr);
-			m->m.x = r->x;
-			m->m.y = r->y;
+
+			wlr_output_set_custom_mode(wlr_output, r->resx, r->resy,
+			r->rate > 0 ? (int)((r->rate * 1000) + 0.5) : 0);
+
+			wlr_output_enable_adaptive_sync(wlr_output, r->adaptive);
 			break;
 		}
 	}
 
-	/* The mode is a tuple of (width, height, refresh rate), and each
-	 * monitor supports only a specific set of modes. We just pick the
-	 * monitor's preferred mode; a more sophisticated compositor would let
-	 * the user configure it. */
-	wlr_output_set_mode(wlr_output, wlr_output_preferred_mode(wlr_output));
+	wlr_output_init_render(wlr_output, alloc, drw);
 
 	/* Set up event listeners */
 	LISTEN(&wlr_output->events.frame, &m->frame, rendermon);
@@ -1032,9 +1034,6 @@ createmon(struct wl_listener *listener, void *data)
 	if (!wlr_output_commit(wlr_output))
 		return;
 
-	/* Try to enable adaptive sync, note that not all monitors support it.
-	 * wlr_output_commit() will deactivate it in case it cannot be enabled */
-	wlr_output_enable_adaptive_sync(wlr_output, 1);
 	wlr_output_commit(wlr_output);
 
 	wl_list_insert(&mons, &m->link);
@@ -1059,10 +1058,10 @@ createmon(struct wl_listener *listener, void *data)
 	 * output (such as DPI, scale factor, manufacturer, etc).
 	 */
 	m->scene_output = wlr_scene_output_create(scene, wlr_output);
-	if (m->m.x < 0 || m->m.y < 0)
+	if (r->x < 0 || r->y < 0)
 		wlr_output_layout_add_auto(output_layout, wlr_output);
 	else
-		wlr_output_layout_add(output_layout, wlr_output, m->m.x, m->m.y);
+		wlr_output_layout_add(output_layout, wlr_output, r->x, r->y);
 	strncpy(m->ltsymbol, m->lt[m->sellt]->symbol, LENGTH(m->ltsymbol));
 }
 
