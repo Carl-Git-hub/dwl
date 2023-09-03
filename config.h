@@ -20,6 +20,7 @@ static const char *const autostart[] = {
 	"systemctl", "--user", "import-environment", "WAYLAND_DISPLAY", "XDG_CURRENT_DESKTOP", NULL,
         "dbus-update-activation-environment", "--systemd", "WAYLAND_DISPLAY", "XDG_CURRENT_DESKTOP=dwl", NULL,
         "swaybg", "-o", "*", "-i", "/usr/share/backgrounds/f30/extras/i-see-stars.jpg", "-m", "fill", NULL,
+        "someblocks", NULL,
         "blueman-applet", NULL,
         "nm-applet", NULL,
         "dunst", NULL,
