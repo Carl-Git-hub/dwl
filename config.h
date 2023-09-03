@@ -137,7 +137,7 @@ static const char *mediaprevious[] = { "playerctl", "previous", NULL };
 // volume-helper is located at ~/.local/bin/volume-helper
 static const char *upvol[] = { "volume-helper", "--increase", "5", NULL };
 static const char *downvol[] = { "volume-helper", "--decrease", "5", NULL };
-static const char *mute[] = { "pactl", "set-sink-mute", "@DEFAULT_SINK@", "toggle", NULL };
+static const char *mute[] = { "sh", "-c", "pactl set-sink-mute @DEFAULT_SINK@ toggle && volume-helper", NULL };
 
 static const char *termcmd[] = { "alacritty", NULL };
 //static const char *menucmd[] = { "rofi -terminal alacritty -modi \"drun,run\" -font \'DejaVu Sans 10\' -show drun -show-icons", NULL };
