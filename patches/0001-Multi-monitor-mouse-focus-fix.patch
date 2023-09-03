@@ -1,0 +1,89 @@
+From 7e8da8140da619daee07f9102b88af87152f5134 Mon Sep 17 00:00:00 2001
+From: Carl <1953433+Carl-Git-hub@users.noreply.github.com>
+Date: Sun, 3 Sep 2023 15:54:55 +1000
+Subject: [PATCH] Multi monitor mouse focus fix
+
+---
+ config.h |  2 ++
+ dwl.c    | 42 ++++++++++++++++++++++++++++++++++++++----
+ 2 files changed, 40 insertions(+), 4 deletions(-)
+
+diff --git a/config.h b/config.h
+index f251298..8e7ed59 100644
+--- a/config.h
++++ b/config.h
+@@ -52,6 +52,8 @@ static const MonitorRule monrules[] = {
+ 	/* example of a HiDPI laptop monitor:
+ 	{ "eDP-1",    0.5,  1,      2,    &layouts[0], WL_OUTPUT_TRANSFORM_NORMAL,   -1,  -1 },
+ 	*/
++	{ "DP-3",    0.5,  1,      1,    &layouts[0], WL_OUTPUT_TRANSFORM_NORMAL,   0,  0 },
++	{ "DP-4",    0.5,  1,      1,    &layouts[0], WL_OUTPUT_TRANSFORM_NORMAL,   2560,  0 },
+ 	/* defaults */
+ 	{ NULL,       0.55, 1,      1,    &layouts[0], WL_OUTPUT_TRANSFORM_NORMAL,   -1,  -1 },
+ };
+diff --git a/dwl.c b/dwl.c
+index 2152b46..3132166 100644
+--- a/dwl.c
++++ b/dwl.c
+@@ -1350,7 +1350,27 @@ focusmon(const Arg *arg)
+ 	c = focustop(selmon);
+ 	focusclient(c, 1);
+ 
+-	if (mousefollowsfocus) warpcursortoclient(c);
++	int max_x = 0, max_y = 0;
++	Monitor *m;
++	struct wlr_box m_area;
++	wl_list_for_each(m, &mons, link) {
++		m_area = m->m;
++		if ((m_area.x + m_area.width) > max_x) {
++			max_x = (m_area.x + m_area.width);
++		}
++		if ((m_area.y + m_area.height) > max_y) {
++			max_y = (m_area.y + m_area.height);
++		}
++	}
++	if (mousefollowsfocus) {
++		if (c) {
++			warpcursortoclient(c);
++		} else {
++			wlr_cursor_warp_absolute(cursor, NULL,
++			((double)selmon->m.x + ((double)selmon->m.width) / 2.0) / (double)max_x,
++			((double)selmon->m.y + ((double)selmon->m.height) / 2.0) / (double)max_y);
++		}
++	}
+ }
+ 
+ void
+@@ -2807,12 +2827,26 @@ virtualkeyboard(struct wl_listener *listener, void *data)
+ 
+ void
+ warpcursortoclient(Client *c) {
+-	struct wlr_box mg = c->mon->m;
++	if (!c) return;
++
++	int max_x = 0, max_y = 0;
++	Monitor *m;
++	struct wlr_box m_area;
++	wl_list_for_each(m, &mons, link) {
++		m_area = m->m;
++		if ((m_area.x + m_area.width) > max_x) {
++			max_x = (m_area.x + m_area.width);
++		}
++		if ((m_area.y + m_area.height) > max_y) {
++			max_y = (m_area.y + m_area.height);
++		}
++	}
++
+ 	struct wlr_box cg = c->geom;
+ 	if (!VISIBLEON(c, selmon)) return;
+ 	wlr_cursor_warp_absolute(cursor, NULL,
+-		((double)cg.x + (double)cg.width / 2.0) / (double)mg.width,
+-		((double)cg.y + (double)cg.height / 2.0) / (double)mg.height);
++		((double)cg.x + (double)cg.width / 2.0) / (double)max_x,
++		((double)cg.y + (double)cg.height / 2.0) / (double)max_y);
+ }
+ 
+ Monitor *
+-- 
+2.41.0
+
