@@ -1,3 +1,4 @@
+#include <X11/XF86keysym.h>
 /* appearance */
 static const int sloppyfocus               = 1;  /* focus follows mouse */
 static const int mousefollowsfocus         = 1;  /* mouse follows focus */
@@ -116,6 +117,18 @@ static const enum libinput_config_tap_button_map button_map = LIBINPUT_CONFIG_TA
 #define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } }
 
 /* commands */
+
+// Media commands
+static const char *mediaplay[] = { "playerctl", "play-pause", NULL };
+static const char *mediastop[] = { "playerctl", "stop", NULL };
+static const char *mediaforward[] = { "playerctl", "next", NULL };
+static const char *mediaprevious[] = { "playerctl", "previous", NULL };
+
+// for changing the volume via alsa amixer //
+static const char *upvol[] = { "amixer", "-q", "-c", "0", "set", "Master", "2+", NULL };
+static const char *downvol[] = { "amixer", "-q", "-c", "0", "set", "Master", "2-", NULL };
+static const char *mute[] = { "amixer", "-q", "set", "Master", "toggle", NULL };
+
 static const char *termcmd[] = { "foot", NULL };
 static const char *menucmd[] = { "bemenu-run", NULL };
 
@@ -177,6 +190,11 @@ static const Key keys[] = {
 #define CHVT(n) { WLR_MODIFIER_CTRL|WLR_MODIFIER_ALT,XKB_KEY_XF86Switch_VT_##n, chvt, {.ui = (n)} }
 	CHVT(1), CHVT(2), CHVT(3), CHVT(4), CHVT(5), CHVT(6),
 	CHVT(7), CHVT(8), CHVT(9), CHVT(10), CHVT(11), CHVT(12),
+	{ 0,XF86XK_AudioPlay, spawn,{.v = mediaplay } },
+	{ 0,XF86XK_AudioStop, spawn,{.v = mediastop } },
+	{ 0,XF86XK_AudioRaiseVolume, spawn,{.v = upvol } },
+	{ 0,XF86XK_AudioLowerVolume, spawn,{.v = downvol } },
+	{ 0,XF86XK_AudioMute,spawn,{.v = mute } },
 };
 
 static const Button buttons[] = {

@@ -1,3 +1,4 @@
+#include <X11/XF86keysym.h>
 /* appearance */
 static const int sloppyfocus               = 1;  /* focus follows mouse */
 static const int mousefollowsfocus         = 1;  /* mouse follows focus */
@@ -125,6 +126,19 @@ static const enum libinput_config_tap_button_map button_map = LIBINPUT_CONFIG_TA
 #define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } }
 
 /* commands */
+
+// Media commands
+static const char *mediaplay[] = { "playerctl", "play-pause", NULL };
+static const char *mediastop[] = { "playerctl", "stop", NULL };
+static const char *mediaforward[] = { "playerctl", "next", NULL };
+static const char *mediaprevious[] = { "playerctl", "previous", NULL };
+
+// for changing the volume via alsa amixer //
+// volume-helper is located at ~/.local/bin/volume-helper
+static const char *upvol[] = { "volume-helper", "--increase", "5", NULL };
+static const char *downvol[] = { "volume-helper", "--decrease", "5", NULL };
+static const char *mute[] = { "pactl", "set-sink-mute", "@DEFAULT_SINK@", "toggle", NULL };
+
 static const char *termcmd[] = { "alacritty", NULL };
 //static const char *menucmd[] = { "rofi -terminal alacritty -modi \"drun,run\" -font \'DejaVu Sans 10\' -show drun -show-icons", NULL };
 static const char *menucmd[] = { 
@@ -197,6 +211,13 @@ static const Key keys[] = {
 #define CHVT(n) { WLR_MODIFIER_CTRL|WLR_MODIFIER_ALT,XKB_KEY_XF86Switch_VT_##n, chvt, {.ui = (n)} }
 	CHVT(1), CHVT(2), CHVT(3), CHVT(4), CHVT(5), CHVT(6),
 	CHVT(7), CHVT(8), CHVT(9), CHVT(10), CHVT(11), CHVT(12),
+	{ 0,XF86XK_AudioPlay, spawn,{.v = mediaplay } },
+	{ 0,XF86XK_AudioStop, spawn,{.v = mediastop } },
+	{ 0,XF86XK_AudioNext, spawn,{.v = mediaforward } },
+	{ 0,XF86XK_AudioPrev, spawn,{.v = mediaprevious } },
+	{ 0,XF86XK_AudioRaiseVolume, spawn,{.v = upvol } },
+	{ 0,XF86XK_AudioLowerVolume, spawn,{.v = downvol } },
+	{ 0,XF86XK_AudioMute,spawn,{.v = mute } },
 };
 
 static const Button buttons[] = {
