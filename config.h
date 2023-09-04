@@ -27,9 +27,10 @@ static const char *const autostart[] = {
         "nm-applet", NULL,
         "dunst", NULL,
         "imwheel", NULL,
-	"/usr/libexec/polkit-gnome-authentication-agent-1", NULL,
+		"/usr/libexec/polkit-gnome-authentication-agent-1", NULL,
         "dropbox", "start", "-i", NULL,
         "wljoywake", NULL,
+		"sh", "/home/fedora/.local/bin/swayidle-lock", NULL,
         NULL /* terminate */
 };
 
@@ -159,12 +160,15 @@ static const char *menucmd[] = {
 	"-show-icons",
 	NULL 
 };
+static const char *lockcmd[] = { "loginctl", "lock-session", NULL };
+static const char *powermenucmd[] = { "rofi", "-show", "power-menu", "-modi", "power-menu:/home/fedora/.local/bin/rofi-power-menu", NULL };
 
 static const Key keys[] = {
 	/* Note that Shift changes certain key codes: c -> C, 2 -> at, etc. */
 	/* modifier                  key                 function        argument */
 	{ MODKEY,                    XKB_KEY_p,          spawn,          {.v = menucmd} },
 	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_Return,     spawn,          {.v = termcmd} },
+	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_L,          spawn,       	 {.v = lockcmd} },
 	{ MODKEY,                    XKB_KEY_Tab,        focusstack,     {.i = +1} },
 	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_ISO_Left_Tab,        focusstack,     {.i = -1} },
 	// { MODKEY,                    XKB_KEY_i,          incnmaster,     {.i = +1} },
@@ -202,7 +206,7 @@ static const Key keys[] = {
 	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_parenright, tag,            {.ui = ~0} },
 	{ MODKEY,                    XKB_KEY_w,          focusmon,       {.i = WLR_DIRECTION_LEFT} },
 	{ MODKEY,                    XKB_KEY_e,          focusmon,       {.i = WLR_DIRECTION_RIGHT} },
-	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_w,       tagmon,         {.i = WLR_DIRECTION_LEFT} },
+	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_W,       tagmon,         {.i = WLR_DIRECTION_LEFT} },
 	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_E,    tagmon,         {.i = WLR_DIRECTION_RIGHT} },
 	TAGKEYS(          XKB_KEY_1, XKB_KEY_exclam,                     0),
 	TAGKEYS(          XKB_KEY_2, XKB_KEY_at,                         1),
@@ -213,7 +217,8 @@ static const Key keys[] = {
 	TAGKEYS(          XKB_KEY_7, XKB_KEY_ampersand,                  6),
 	TAGKEYS(          XKB_KEY_8, XKB_KEY_asterisk,                   7),
 	TAGKEYS(          XKB_KEY_9, XKB_KEY_parenleft,                  8),
-	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_Q,          quit,           {0} },
+	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_Q,          spawn,         {.v = powermenucmd} },
+	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_U,          quit,           {0} },
 
 	/* Ctrl-Alt-Backspace and Ctrl-Alt-Fx used to be handled by X server */
 	{ WLR_MODIFIER_CTRL|WLR_MODIFIER_ALT,XKB_KEY_Terminate_Server, quit, {0} },
