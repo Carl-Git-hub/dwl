@@ -1,6 +1,7 @@
 #include <X11/XF86keysym.h>
 /* appearance */
 static const int sloppyfocus               = 1;  /* focus follows mouse */
+static const int mousefollowsfocus         = 1;  /* mouse follows focus */
 static const int bypass_surface_visibility = 0;  /* 1 means idle inhibitors will disable idle tracking even if it's surface isn't visible  */
 static const int smartgaps                 = 0;  /* 1 means no outer gap when there is only one window */
 static const int monoclegaps               = 0;  /* 1 means outer gaps in monocle layout */
