@@ -1521,7 +1521,7 @@ focusclient(Client *c, int lift)
 
 			client_activate_surface(old, 0);
 		}
-		if (old_c->foreign_toplevel) {
+		if (old_c->foreign_toplevel && old_c->mon && old_c->mon->wlr_output) {
 			wlr_foreign_toplevel_handle_v1_output_leave(old_c->foreign_toplevel, old_c->mon->wlr_output);
 		}
 	}
@@ -1541,7 +1541,8 @@ focusclient(Client *c, int lift)
 
 	/* Activate the new client */
 	client_activate_surface(client_surface(c), 1);
-	if (c->foreign_toplevel) {
+
+	if (c->foreign_toplevel && c->mon && c->mon->wlr_output) {
 		wlr_foreign_toplevel_handle_v1_output_enter(c->foreign_toplevel, c->mon->wlr_output);
 	}
 }
