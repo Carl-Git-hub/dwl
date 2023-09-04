@@ -2013,6 +2013,10 @@ mapnotify(struct wl_listener *listener, void *data)
 	}
 	if (c && c->foreign_toplevel && selmon && selmon->wlr_output) {
 		wlr_foreign_toplevel_handle_v1_output_enter(c->foreign_toplevel, selmon->wlr_output);
+		wlr_foreign_toplevel_handle_v1_set_title(c->foreign_toplevel, client_get_title(c));
+		if (client_get_appid(c) != NULL) {
+			wlr_foreign_toplevel_handle_v1_set_app_id(c->foreign_toplevel, client_get_appid(c));
+		}
 	}
 	printstatus();
 
