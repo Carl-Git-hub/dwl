@@ -1,6 +1,5 @@
 #include <X11/XF86keysym.h>
 /* appearance */
-static const int noidlefullscreen          = 1;  /* disable idle when fullscreen */
 static const int sloppyfocus               = 1;  /* focus follows mouse */
 static const int mousefollowsfocus         = 1;  /* mouse follows focus */
 static const int bypass_surface_visibility = 0;  /* 1 means idle inhibitors will disable idle tracking even if it's surface isn't visible  */

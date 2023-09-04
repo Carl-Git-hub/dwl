@@ -1905,12 +1905,8 @@ void
 killclient(const Arg *arg)
 {
 	Client *sel = focustop(selmon);
-	if (sel) {
+	if (sel)
 		client_send_close(sel);
-		if (noidlefullscreen) {
-			checkidleinhibitor(NULL);
-		}
-	}
 }
 
 void
@@ -2473,16 +2469,10 @@ setfullscreen(Client *c, int fullscreen)
 	if (fullscreen) {
 		c->prev = c->geom;
 		resize(c, c->mon->m, 0);
-		if (noidlefullscreen) {
-			wlr_idle_set_enabled(idle, NULL, 0);
-			wlr_idle_notifier_v1_set_inhibited(idle_notifier, 1);
-		}
 	} else {
 		/* restore previous size instead of arrange for floating windows since
 		 * client positions are set by the user and cannot be recalculated */
 		resize(c, c->prev, 0);
-		if (noidlefullscreen)
-			checkidleinhibitor(NULL);
 	}
 	arrange(c->mon);
 	printstatus();
