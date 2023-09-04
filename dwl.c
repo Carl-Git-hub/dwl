@@ -825,8 +825,9 @@ closemon(Monitor *m)
 		if (c->isfloating && c->geom.x > m->m.width)
 			resize(c, (struct wlr_box){.x = c->geom.x - m->w.width, .y = c->geom.y,
 				.width = c->geom.width, .height = c->geom.height}, 0);
-		if (c->mon == m)
+		if (c->mon == m) {
 			setmon(c, selmon, c->tags);
+		}
 	}
 	focusclient(focustop(selmon), 1);
 	printstatus();
@@ -1268,6 +1269,9 @@ destroynotify(struct wl_listener *listener, void *data)
 		wl_list_remove(&c->activate.link);
 	}
 #endif
+	if (c->foreign_toplevel) {
+		wlr_foreign_toplevel_handle_v1_destroy(c->foreign_toplevel);
+	}
 	free(c);
 }
 
@@ -1518,11 +1522,10 @@ focusclient(Client *c, int lift)
 		} else if (old_c && !client_is_unmanaged(old_c) && (!c || !client_wants_focus(c))) {
 			for (i = 0; i < 4; i++)
 				wlr_scene_rect_set_color(old_c->border[i], bordercolor);
-
 			client_activate_surface(old, 0);
-		}
-		if (old_c && old_c->foreign_toplevel && old_c->mon && old_c->mon->wlr_output) {
-			wlr_foreign_toplevel_handle_v1_output_leave(old_c->foreign_toplevel, old_c->mon->wlr_output);
+			if (old_c->foreign_toplevel) {
+				wlr_foreign_toplevel_handle_v1_set_activated(old_c->foreign_toplevel, 0);
+			}
 		}
 	}
 	printstatus();
@@ -1539,12 +1542,12 @@ focusclient(Client *c, int lift)
 	/* Have a client, so focus its top-level wlr_surface */
 	client_notify_enter(client_surface(c), wlr_seat_get_keyboard(seat));
 
+	if (c && c->foreign_toplevel) {
+		wlr_foreign_toplevel_handle_v1_set_activated(c->foreign_toplevel, 1);
+	}
+
 	/* Activate the new client */
 	client_activate_surface(client_surface(c), 1);
-
-	if (c->foreign_toplevel && c->mon && c->mon->wlr_output) {
-		wlr_foreign_toplevel_handle_v1_output_enter(c->foreign_toplevel, c->mon->wlr_output);
-	}
 }
 
 void
@@ -1903,9 +1906,6 @@ killclient(const Arg *arg)
 {
 	Client *sel = focustop(selmon);
 	if (sel) {
-		if (sel->foreign_toplevel) {
-			wlr_foreign_toplevel_handle_v1_destroy(sel->foreign_toplevel);
-		}
 		client_send_close(sel);
 		if (noidlefullscreen) {
 			checkidleinhibitor(NULL);
@@ -2010,6 +2010,9 @@ mapnotify(struct wl_listener *listener, void *data)
 		setmon(c, p->mon, p->tags);
 	} else {
 		applyrules(c);
+	}
+	if (c && c->foreign_toplevel && selmon && selmon->wlr_output) {
+		wlr_foreign_toplevel_handle_v1_output_enter(c->foreign_toplevel, selmon->wlr_output);
 	}
 	printstatus();
 
@@ -2531,13 +2534,20 @@ setmon(Client *c, Monitor *m, uint32_t newtags)
 	c->prev = c->geom;
 
 	/* Scene graph sends surface leave/enter events on move and resize */
-	if (oldmon)
+	if (oldmon) {
 		arrange(oldmon);
+		if (c->foreign_toplevel && oldmon->wlr_output) {
+			wlr_foreign_toplevel_handle_v1_output_leave(c->foreign_toplevel, oldmon->wlr_output);
+		}
+	}
 	if (m) {
 		/* Make sure window actually overlaps with the monitor */
 		resize(c, c->geom, 0);
 		c->tags = newtags ? newtags : m->tagset[m->seltags]; /* assign tags of target monitor */
 		setfullscreen(c, c->isfullscreen); /* This will call arrange(c->mon) */
+		if (c->foreign_toplevel && m && m->wlr_output) {
+			wlr_foreign_toplevel_handle_v1_output_enter(c->foreign_toplevel, m->wlr_output);
+		}
 	}
 	focusclient(focustop(selmon), 1);
 }
