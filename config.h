@@ -145,8 +145,8 @@ static const char *mediaprevious[] = { "playerctl", "previous", NULL };
 
 // for changing the volume via alsa amixer //
 // volume-helper is located at ~/.local/bin/volume-helper
-static const char *upvol[] = { "volume-helper", "--increase", "5", NULL };
-static const char *downvol[] = { "volume-helper", "--decrease", "5", NULL };
+static const char *upvol[] = { "/home/fedora/.local/bin/volume-helper", "--increase", "5", NULL };
+static const char *downvol[] = { "/home/fedora/.local/bin/volume-helper", "--decrease", "5", NULL };
 static const char *mute[] = { "sh", "-c", "pactl set-sink-mute @DEFAULT_SINK@ toggle && volume-helper", NULL };
 
 static const char *termcmd[] = { "alacritty", NULL };
