@@ -1506,8 +1506,12 @@ void
 killclient(const Arg *arg)
 {
 	Client *sel = focustop(selmon);
-	if (sel)
+	if (sel) {
+		if (sel->foreign_toplevel) {
+			wlr_foreign_toplevel_handle_v1_destroy(sel->foreign_toplevel);
+		}
 		client_send_close(sel);
+	}
 }
 
 void
@@ -2198,7 +2202,7 @@ setup(void)
 	wlr_viewporter_create(dpy);
 	wlr_single_pixel_buffer_manager_v1_create(dpy);
 	wlr_subcompositor_create(dpy);
-	wlr_foreign_toplevel_manager_v1_create(dpy);
+	foreign_toplevel_manager = wlr_foreign_toplevel_manager_v1_create(dpy);
 
 	/* Initializes the interface used to implement urgency hints */
 	activation = wlr_xdg_activation_v1_create(dpy);
