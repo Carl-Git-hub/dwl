@@ -21,6 +21,7 @@
 #include <wlr/types/wlr_data_control_v1.h>
 #include <wlr/types/wlr_data_device.h>
 #include <wlr/types/wlr_export_dmabuf_v1.h>
+#include <wlr/types/wlr_foreign_toplevel_management_v1.h>
 #include <wlr/types/wlr_gamma_control_v1.h>
 #include <wlr/types/wlr_idle.h>
 #include <wlr/types/wlr_idle_inhibit_v1.h>
@@ -126,6 +127,9 @@ typedef struct {
 	uint32_t tags;
 	int isfloating, isurgent, isfullscreen;
 	uint32_t resize; /* configure serial of a pending resize */
+	struct wlr_foreign_toplevel_handle_v1 *foreign_toplevel;
+	struct wl_listener foreign_activate_request;
+	struct wl_listener foreign_close_request;
 } Client;
 
 typedef struct {
@@ -367,6 +371,7 @@ static struct wlr_box sgeom;
 static struct wl_list mons;
 static Monitor *selmon;
 
+static struct wlr_foreign_toplevel_manager_v1 *foreign_toplevel_manager;
 /* global event handlers */
 static struct wl_listener cursor_axis = {.notify = axisnotify};
 static struct wl_listener cursor_button = {.notify = buttonpress};
@@ -1253,6 +1258,9 @@ focusclient(Client *c, int lift)
 
 			client_activate_surface(old, 0);
 		}
+		if (old_c->foreign_toplevel) {
+			wlr_foreign_toplevel_handle_v1_output_leave(old_c->foreign_toplevel, old_c->mon->wlr_output);
+		}
 	}
 	printstatus();
 
@@ -1270,6 +1278,9 @@ focusclient(Client *c, int lift)
 
 	/* Activate the new client */
 	client_activate_surface(client_surface(c), 1);
+	if (c->foreign_toplevel) {
+		wlr_foreign_toplevel_handle_v1_output_enter(c->foreign_toplevel, c->mon->wlr_output);
+	}
 }
 
 void
@@ -1577,6 +1588,9 @@ mapnotify(struct wl_listener *listener, void *data)
 	client_get_geometry(c, &c->geom);
 	c->geom.width += 2 * c->bw;
 	c->geom.height += 2 * c->bw;
+
+	/* Foreign top level */
+	c->foreign_toplevel = wlr_foreign_toplevel_handle_v1_create(foreign_toplevel_manager);
 
 	/* Insert this client into client lists. */
 	wl_list_insert(&clients, &c->link);
@@ -2184,6 +2198,7 @@ setup(void)
 	wlr_viewporter_create(dpy);
 	wlr_single_pixel_buffer_manager_v1_create(dpy);
 	wlr_subcompositor_create(dpy);
+	wlr_foreign_toplevel_manager_v1_create(dpy);
 
 	/* Initializes the interface used to implement urgency hints */
 	activation = wlr_xdg_activation_v1_create(dpy);
@@ -2575,9 +2590,18 @@ updatemons(struct wl_listener *listener, void *data)
 void
 updatetitle(struct wl_listener *listener, void *data)
 {
+	const char *appid, *title;
 	Client *c = wl_container_of(listener, c, set_title);
 	if (c == focustop(c->mon))
 		printstatus();
+	title = client_get_title(c);
+	appid = client_get_appid(c);
+	if (c->foreign_toplevel) {
+		wlr_foreign_toplevel_handle_v1_set_title(c->foreign_toplevel, title);
+		if (appid != NULL) {
+			wlr_foreign_toplevel_handle_v1_set_app_id(c->foreign_toplevel, appid);
+		}
+	}
 }
 
 void
