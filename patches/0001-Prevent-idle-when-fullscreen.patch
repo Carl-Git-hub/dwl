@@ -1,0 +1,58 @@
+From a6a98ebc537614adb9b176ac1497eaef38f9db91 Mon Sep 17 00:00:00 2001
+From: Carl <1953433+Carl-Git-hub@users.noreply.github.com>
+Date: Mon, 4 Sep 2023 11:40:40 +1000
+Subject: [PATCH] Prevent idle when fullscreen
+
+---
+ config.h |  1 +
+ dwl.c    | 11 ++++++++++-
+ 2 files changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/config.h b/config.h
+index d15cc5b..1e1e9da 100644
+--- a/config.h
++++ b/config.h
+@@ -1,5 +1,6 @@
+ #include <X11/XF86keysym.h>
+ /* appearance */
++static const int noidlefullscreen          = 1;  /* disable idle when fullscreen */
+ static const int sloppyfocus               = 1;  /* focus follows mouse */
+ static const int mousefollowsfocus         = 1;  /* mouse follows focus */
+ static const int bypass_surface_visibility = 0;  /* 1 means idle inhibitors will disable idle tracking even if it's surface isn't visible  */
+diff --git a/dwl.c b/dwl.c
+index c3ba1c4..066e45a 100644
+--- a/dwl.c
++++ b/dwl.c
+@@ -1890,8 +1890,11 @@ void
+ killclient(const Arg *arg)
+ {
+ 	Client *sel = focustop(selmon);
+-	if (sel)
++	if (sel) {
+ 		client_send_close(sel);
++		if (noidlefullscreen)
++			checkidleinhibitor(NULL);
++	}
+ }
+ 
+ void
+@@ -2444,10 +2447,16 @@ setfullscreen(Client *c, int fullscreen)
+ 	if (fullscreen) {
+ 		c->prev = c->geom;
+ 		resize(c, c->mon->m, 0);
++		if (noidlefullscreen) {
++			wlr_idle_set_enabled(idle, NULL, 0);
++			wlr_idle_notifier_v1_set_inhibited(idle_notifier, 1);
++		}
+ 	} else {
+ 		/* restore previous size instead of arrange for floating windows since
+ 		 * client positions are set by the user and cannot be recalculated */
+ 		resize(c, c->prev, 0);
++		if (noidlefullscreen)
++			checkidleinhibitor(NULL);
+ 	}
+ 	arrange(c->mon);
+ 	printstatus();
+-- 
+2.41.0
+
