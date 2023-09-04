@@ -126,6 +126,7 @@ typedef struct {
 	struct wl_listener set_hints;
 #endif
 	unsigned int bw;
+	float opacity;
 	uint32_t tags;
 	int isfloating, isurgent, isfullscreen;
 	uint32_t resize; /* configure serial of a pending resize */
@@ -293,6 +294,7 @@ static void requeststartdrag(struct wl_listener *listener, void *data);
 static void requestmonstate(struct wl_listener *listener, void *data);
 static void resize(Client *c, struct wlr_box geo, int interact);
 static void run(char *startup_cmd);
+static void scenebuffersetopacity(struct wlr_scene_buffer *buffer, int sx, int sy, void *user_data);
 static void setcursor(struct wl_listener *listener, void *data);
 static void setfloating(Client *c, int floating);
 static void setfullscreen(Client *c, int fullscreen);
@@ -983,6 +985,7 @@ createnotify(struct wl_listener *listener, void *data)
 	c = xdg_surface->data = ecalloc(1, sizeof(*c));
 	c->surface.xdg = xdg_surface;
 	c->bw = borderpx;
+	c->opacity = background_opacity;
 
 	LISTEN(&xdg_surface->surface->events.commit, &c->commit, commitnotify);
 	LISTEN(&xdg_surface->surface->events.map, &c->map, mapnotify);
@@ -1162,6 +1165,16 @@ destroysessionmgr(struct wl_listener *listener, void *data)
 	wl_list_remove(&listener->link);
 }
 
+void
+scenebuffersetopacity(struct wlr_scene_buffer *buffer, int sx, int sy, void *data)
+{
+	Client *c = data;
+	/* xdg-popups are children of Client.scene, we do not have to worry about
+	   messing with them. */
+	wlr_scene_buffer_set_opacity(buffer, c->isfullscreen ? 1 : c->opacity);
+}
+
+
 Monitor *
 dirtomon(enum wlr_direction dir)
 {
@@ -1235,6 +1248,9 @@ focusclient(Client *c, int lift)
 				wlr_scene_rect_set_color(old_c->border[i], bordercolor);
 
 			client_activate_surface(old, 0);
+
+			old_c->opacity = background_opacity;
+			wlr_scene_node_for_each_buffer(&old_c->scene_surface->node, scenebuffersetopacity, old_c);
 		}
 	}
 	printstatus();
@@ -1253,6 +1269,9 @@ focusclient(Client *c, int lift)
 
 	/* Activate the new client */
 	client_activate_surface(client_surface(c), 1);
+
+	c->opacity = foreground_opacity;
+	wlr_scene_node_for_each_buffer(&c->scene_surface->node, scenebuffersetopacity, c);
 }
 
 void
