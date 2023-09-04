@@ -1,0 +1,59 @@
+From bb045f7da7fdb851c99761260e67e68b661ac24e Mon Sep 17 00:00:00 2001
+From: Carl <1953433+Carl-Git-hub@users.noreply.github.com>
+Date: Mon, 4 Sep 2023 21:18:19 +1000
+Subject: [PATCH] Fullscreen idle disable
+
+---
+ config.def.h |  1 +
+ dwl.c        | 14 ++++++++++++--
+ 2 files changed, 13 insertions(+), 2 deletions(-)
+
+diff --git a/config.def.h b/config.def.h
+index 1677f6f..0abba03 100644
+--- a/config.def.h
++++ b/config.def.h
+@@ -6,6 +6,7 @@ static const float bordercolor[]           = {0.5, 0.5, 0.5, 1.0};
+ static const float focuscolor[]            = {1.0, 0.0, 0.0, 1.0};
+ /* To conform the xdg-protocol, set the alpha to zero to restore the old behavior */
+ static const float fullscreen_bg[]         = {0.1, 0.1, 0.1, 1.0};
++static const int noidlefullscreen          = 1;  /* disable idle when fullscreen */
+ 
+ /* tagging - tagcount must be no greater than 31 */
+ #define TAGCOUNT (9)
+diff --git a/dwl.c b/dwl.c
+index 4ff5c37..26c76df 100644
+--- a/dwl.c
++++ b/dwl.c
+@@ -475,9 +475,14 @@ void
+ arrange(Monitor *m)
+ {
+ 	Client *c;
+-	wl_list_for_each(c, &clients, link)
++	bool is_any_client_fullscreen = false;
++	wl_list_for_each(c, &clients, link) {
+ 		if (c->mon == m)
+ 			wlr_scene_node_set_enabled(&c->scene->node, VISIBLEON(c, m));
++		if (c->isfullscreen) {
++			is_any_client_fullscreen = true;
++		}
++	}
+ 
+ 	wlr_scene_node_set_enabled(&m->fullscreen_bg->node,
+ 			(c = focustop(m)) && c->isfullscreen);
+@@ -487,7 +492,12 @@ arrange(Monitor *m)
+ 	if (m->lt[m->sellt]->arrange)
+ 		m->lt[m->sellt]->arrange(m);
+ 	motionnotify(0);
+-	checkidleinhibitor(NULL);
++	if (noidlefullscreen && is_any_client_fullscreen) {
++		wlr_idle_set_enabled(idle, NULL, 0);
++		wlr_idle_notifier_v1_set_inhibited(idle_notifier, 1);
++    } else {
++		checkidleinhibitor(NULL);
++	}
+ }
+ 
+ void
+-- 
+2.41.0
+
