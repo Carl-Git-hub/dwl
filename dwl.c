@@ -475,9 +475,14 @@ void
 arrange(Monitor *m)
 {
 	Client *c;
-	wl_list_for_each(c, &clients, link)
+	bool is_any_client_fullscreen = false;
+	wl_list_for_each(c, &clients, link) {
 		if (c->mon == m)
 			wlr_scene_node_set_enabled(&c->scene->node, VISIBLEON(c, m));
+		if (c->isfullscreen) {
+			is_any_client_fullscreen = true;
+		}
+	}
 
 	wlr_scene_node_set_enabled(&m->fullscreen_bg->node,
 			(c = focustop(m)) && c->isfullscreen);
@@ -487,7 +492,12 @@ arrange(Monitor *m)
 	if (m->lt[m->sellt]->arrange)
 		m->lt[m->sellt]->arrange(m);
 	motionnotify(0);
-	checkidleinhibitor(NULL);
+	if (noidlefullscreen && is_any_client_fullscreen) {
+		wlr_idle_set_enabled(idle, NULL, 0);
+		wlr_idle_notifier_v1_set_inhibited(idle_notifier, 1);
+    } else {
+		checkidleinhibitor(NULL);
+	}
 }
 
 void
