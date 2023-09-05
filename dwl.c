@@ -554,7 +554,7 @@ arrange(Monitor *m)
 		checkidleinhibitor(NULL);
 	}
 
-	if (mousefollowsfocus) warpcursortofocus(c);
+	if (c && mousefollowsfocus) warpcursortofocus(c);
 }
 
 void
