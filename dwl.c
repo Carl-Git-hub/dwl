@@ -514,6 +514,7 @@ arrange(Monitor *m)
     } else {
 		checkidleinhibitor(NULL);
 	}
+	if (c && mousefollowsfocus) warpcursortofocus(c);
 }
 
 void
@@ -1380,8 +1381,6 @@ focusclient(Client *c, int lift)
 
 	c->opacity = foreground_opacity;
 	wlr_scene_node_for_each_buffer(&c->scene_surface->node, scenebuffersetopacity, c);
-
-	if (c && mousefollowsfocus) warpcursortofocus(c);
 }
 
 void
