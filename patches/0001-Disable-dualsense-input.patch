@@ -1,0 +1,29 @@
+From c8bc164721b1b017123990152da9599eb3d86eda Mon Sep 17 00:00:00 2001
+From: Carl <1953433+Carl-Git-hub@users.noreply.github.com>
+Date: Mon, 4 Sep 2023 21:09:42 +1000
+Subject: [PATCH] Disable dualsense input
+
+---
+ dwl.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/dwl.c b/dwl.c
+index 4ff5c37..a913a97 100644
+--- a/dwl.c
++++ b/dwl.c
+@@ -1366,6 +1366,12 @@ inputdevice(struct wl_listener *listener, void *data)
+ 	 * available. */
+ 	struct wlr_input_device *device = data;
+ 	uint32_t caps;
++	struct libinput_device *libinput_device = (struct libinput_device*)wlr_libinput_get_device_handle(device);
++
++	if (device->vendor == 1356 && device->product == 3302) {
++		libinput_device_config_send_events_set_mode(libinput_device, LIBINPUT_CONFIG_SEND_EVENTS_DISABLED);
++		return;
++	}
+ 
+ 	switch (device->type) {
+ 	case WLR_INPUT_DEVICE_KEYBOARD:
+-- 
+2.41.0
+
