@@ -490,10 +490,10 @@ arrange(Monitor *m)
 	wl_list_for_each(c, &clients, link) {
 		if (c->mon == m)
 			wlr_scene_node_set_enabled(&c->scene->node, VISIBLEON(c, m));
+			wlr_xdg_toplevel_set_size(c->surface.xdg->toplevel, c->geom.width, c->geom.height);
 		if (c->isfullscreen) {
 			is_any_client_fullscreen = true;
 		}
-		wlr_xdg_toplevel_set_size(c->surface.xdg->toplevel, c->geom.width, c->geom.height);
 	}
 
 	wlr_scene_node_set_enabled(&m->fullscreen_bg->node,
