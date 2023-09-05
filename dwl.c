@@ -495,6 +495,7 @@ arrange(Monitor *m)
 			client_set_suspended(c, !VISIBLEON(c, m));
 		}
 			wlr_xdg_toplevel_set_size(c->surface.xdg->toplevel, c->geom.width, c->geom.height);
+		}
 		if (c->isfullscreen) {
 			is_any_client_fullscreen = true;
 		}
