@@ -1839,9 +1839,6 @@ unset_fullscreen:
 	wl_list_for_each(w, &clients, link)
 		if (w != c && w->isfullscreen && m == w->mon && (w->tags & c->tags))
 			setfullscreen(w, 0);
-
-	/* Set initial transparency */
-	wlr_scene_node_for_each_buffer(&c->scene_surface->node, scenebuffersetopacity, c);
 }
 
 void
