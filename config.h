@@ -27,14 +27,14 @@ static const char *const autostart[] = {
         "waybar", NULL,
         "swaybg", "-o", "*", "-i", "/usr/share/backgrounds/f30/extras/i-see-stars.jpg", "-m", "fill", NULL,
         "blueman-applet", NULL,
-		"fcitx5", NULL,
+	"fcitx5", NULL,
         "nm-applet", NULL,
         "dunst", NULL,
         "imwheel", NULL,
-		"/usr/libexec/polkit-gnome-authentication-agent-1", NULL,
+	"/usr/libexec/polkit-gnome-authentication-agent-1", NULL,
         "dropbox", "start", "-i", NULL,
         "wljoywake", NULL,
-		"sh", "/home/fedora/.local/bin/swayidle-lock", NULL,
+	"sh", "/home/fedora/.local/bin/swayidle-lock", NULL,
         NULL /* terminate */
 };
 
