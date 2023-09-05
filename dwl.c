@@ -494,10 +494,10 @@ arrange(Monitor *m)
 			wlr_scene_node_set_enabled(&c->scene->node, VISIBLEON(c, m));
 			client_set_suspended(c, !VISIBLEON(c, m));
 		}
+			wlr_xdg_toplevel_set_size(c->surface.xdg->toplevel, c->geom.width, c->geom.height);
 		if (c->isfullscreen) {
 			is_any_client_fullscreen = true;
 		}
-		wlr_xdg_toplevel_set_size(c->surface.xdg->toplevel, c->geom.width, c->geom.height);
 	}
 
 	wlr_scene_node_set_enabled(&m->fullscreen_bg->node,
