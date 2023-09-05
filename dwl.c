@@ -343,6 +343,7 @@ static void updatetitle(struct wl_listener *listener, void *data);
 static void urgent(struct wl_listener *listener, void *data);
 static void view(const Arg *arg);
 static void virtualkeyboard(struct wl_listener *listener, void *data);
+static void warpcursortofocus(Client *c);
 static Monitor *xytomon(double x, double y);
 static struct wlr_scene_node *xytonode(double x, double y, struct wlr_surface **psurface,
 		Client **pc, LayerSurface **pl, double *nx, double *ny);
@@ -500,6 +501,8 @@ arrange(Monitor *m)
 	if (m->lt[m->sellt]->arrange)
 		m->lt[m->sellt]->arrange(m);
 	motionnotify(0);
+
+	if (c && mousefollowsfocus) warpcursortofocus(c);
 	checkidleinhibitor(NULL);
 }
 
@@ -1357,11 +1360,18 @@ void
 focusmon(const Arg *arg)
 {
 	int i = 0, nmons = wl_list_length(&mons);
+	Client *c = NULL;
 	if (nmons)
 		do /* don't switch to disabled mons */
 			selmon = dirtomon(arg->i);
 		while (!selmon->wlr_output->enabled && i++ < nmons);
-	focusclient(focustop(selmon), 1);
+
+	c = focustop(selmon);
+	focusclient(c, 1);
+
+	if (mousefollowsfocus) {
+		warpcursortofocus(c);
+	}
 }
 
 void
@@ -1388,6 +1398,7 @@ focusstack(const Arg *arg)
 	}
 	/* If only one client is visible on selmon, then c == sel */
 	focusclient(c, 1);
+	if (mousefollowsfocus) warpcursortofocus(c);
 }
 
 /* We probably should change the name of this, it sounds like
@@ -2952,6 +2963,34 @@ virtualkeyboard(struct wl_listener *listener, void *data)
 {
 	struct wlr_virtual_keyboard_v1 *keyboard = data;
 	createkeyboard(&keyboard->keyboard);
+}
+
+void
+warpcursortofocus(Client *c) {
+	int max_x = 0, max_y = 0;
+	Monitor *m;
+	struct wlr_box m_area;
+	wl_list_for_each(m, &mons, link) {
+		m_area = m->m;
+		if ((m_area.x + m_area.width) > max_x) {
+			max_x = (m_area.x + m_area.width);
+		}
+		if ((m_area.y + m_area.height) > max_y) {
+			max_y = (m_area.y + m_area.height);
+		}
+	}
+	if (c) {
+
+	struct wlr_box cg = c->geom;
+	if (!VISIBLEON(c, selmon)) return;
+	wlr_cursor_warp_absolute(cursor, NULL,
+		((double)cg.x + (double)cg.width / 2.0) / (double)max_x,
+		((double)cg.y + (double)cg.height / 2.0) / (double)max_y);
+	} else {
+		wlr_cursor_warp_absolute(cursor, NULL,
+			((double)selmon->m.x + ((double)selmon->m.width) / 2.0) / (double)max_x,
+			((double)selmon->m.y + ((double)selmon->m.height) / 2.0) / (double)max_y);
+	}
 }
 
 Monitor *
