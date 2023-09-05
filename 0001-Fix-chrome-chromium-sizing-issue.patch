@@ -1,0 +1,32 @@
+From 77ca7d70eed43a036f35c085cf4fa08b6eec11ea Mon Sep 17 00:00:00 2001
+From: Carl <1953433+Carl-Git-hub@users.noreply.github.com>
+Date: Tue, 5 Sep 2023 20:57:23 +1000
+Subject: [PATCH] Fix chrome/chromium sizing issue
+
+Fixed X11 crash
+---
+ dwl.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/dwl.c b/dwl.c
+index 83a55aa..6608a53 100644
+--- a/dwl.c
++++ b/dwl.c
+@@ -456,8 +456,13 @@ arrange(Monitor *m)
+ {
+ 	Client *c;
+ 	wl_list_for_each(c, &clients, link)
+-		if (c->mon == m)
++		if (c->mon == m) {
+ 			wlr_scene_node_set_enabled(&c->scene->node, VISIBLEON(c, m));
++			if (c->surface.xdg && c->mon && c->geom.width > 0 && c->geom.width <= c->mon->m.width && 
++					c->geom.height > 0 && c->geom.height <= c->mon->m.height && c->type != X11Managed) {
++					wlr_xdg_toplevel_set_size(c->surface.xdg->toplevel, c->geom.width, c->geom.height);
++			}
++		}
+ 
+ 	wlr_scene_node_set_enabled(&m->fullscreen_bg->node,
+ 			(c = focustop(m)) && c->isfullscreen);
+-- 
+2.41.0
+
