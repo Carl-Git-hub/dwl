@@ -456,8 +456,13 @@ arrange(Monitor *m)
 {
 	Client *c;
 	wl_list_for_each(c, &clients, link)
-		if (c->mon == m)
+		if (c->mon == m) {
 			wlr_scene_node_set_enabled(&c->scene->node, VISIBLEON(c, m));
+			if (c->surface.xdg && c->mon && c->geom.width > 0 && c->geom.width <= c->mon->m.width && 
+					c->geom.height > 0 && c->geom.height <= c->mon->m.height && c->type != X11Managed) {
+						wlr_xdg_toplevel_set_size(c->surface.xdg->toplevel, c->geom.width, c->geom.height);
+			}
+		}
 
 	wlr_scene_node_set_enabled(&m->fullscreen_bg->node,
 			(c = focustop(m)) && c->isfullscreen);
