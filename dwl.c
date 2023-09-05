@@ -3018,7 +3018,7 @@ warpcursortofocus(Client *c) {
 	wlr_cursor_warp_absolute(cursor, NULL,
 		((double)cg.x + (double)cg.width / 2.0) / (double)max_x,
 		((double)cg.y + (double)cg.height / 2.0) / (double)max_y);
-	} else {
+	} else if (selmon) {
 		wlr_cursor_warp_absolute(cursor, NULL,
 			((double)selmon->m.x + ((double)selmon->m.width) / 2.0) / (double)max_x,
 			((double)selmon->m.y + ((double)selmon->m.height) / 2.0) / (double)max_y);
