@@ -1,0 +1,198 @@
+From 5beb96f41f4696cc3d080e3292280aebd1fcdadc Mon Sep 17 00:00:00 2001
+From: Ben Collerson <benc@benc.cc>
+Date: Wed, 23 Nov 2022 21:55:04 +1000
+Subject: [PATCH] singletagset
+
+---
+ dwl.c | 88 +++++++++++++++++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 79 insertions(+), 9 deletions(-)
+
+diff --git a/dwl.c b/dwl.c
+index 1b59c21b6..73655d57f 100644
+--- a/dwl.c
++++ b/dwl.c
+@@ -227,6 +227,7 @@ static void arrange(Monitor *m);
+ static void arrangelayer(Monitor *m, struct wl_list *list,
+ 		struct wlr_box *usable_area, int exclusive);
+ static void arrangelayers(Monitor *m);
++static void attachclients(Monitor *m);
+ static void axisnotify(struct wl_listener *listener, void *data);
+ static void buttonpress(struct wl_listener *listener, void *data);
+ static void chvt(const Arg *arg);
+@@ -260,6 +261,7 @@ static void focusmon(const Arg *arg);
+ static void focusstack(const Arg *arg);
+ static Client *focustop(Monitor *m);
+ static void fullscreennotify(struct wl_listener *listener, void *data);
++static size_t getunusedtag(void);
+ static void incnmaster(const Arg *arg);
+ static void inputdevice(struct wl_listener *listener, void *data);
+ static int keybinding(uint32_t mods, xkb_keysym_t sym);
+@@ -554,6 +556,15 @@ arrangelayers(Monitor *m)
+ 	}
+ }
+ 
++void
++attachclients(Monitor *m)
++{
++	Client *c;
++	wl_list_for_each(c, &clients, link)
++		if (c->tags & m->tagset[m->seltags])
++			setmon(c, m, c->tags);
++}
++
+ void
+ axisnotify(struct wl_listener *listener, void *data)
+ {
+@@ -913,7 +924,7 @@ createmon(struct wl_listener *listener, void *data)
+ 	/* Initialize monitor state using configured rules */
+ 	for (i = 0; i < LENGTH(m->layers); i++)
+ 		wl_list_init(&m->layers[i]);
+-	m->tagset[0] = m->tagset[1] = 1;
++	m->tagset[0] = m->tagset[1] = (1<<getunusedtag()) & TAGMASK;
+ 	for (r = monrules; r < END(monrules); r++) {
+ 		if (!r->name || strstr(wlr_output->name, r->name)) {
+ 			m->mfact = r->mfact;
+@@ -1328,6 +1339,22 @@ fullscreennotify(struct wl_listener *listener, void *data)
+ 	setfullscreen(c, client_wants_fullscreen(c));
+ }
+ 
++size_t
++getunusedtag(void)
++{
++	size_t i = 0;
++	Monitor *m;
++	if (wl_list_empty(&mons))
++		return i;
++	for (i=0; i < LENGTH(tags); i++) {
++		wl_list_for_each(m, &mons, link) {
++			if (!(m->tagset[m->seltags] & (1<<i)))
++				return i;
++		}
++	}
++	return i;
++}
++
+ void
+ incnmaster(const Arg *arg)
+ {
+@@ -1834,8 +1861,6 @@ printstatus(void)
+ 	wl_list_for_each(m, &mons, link) {
+ 		occ = urg = 0;
+ 		wl_list_for_each(c, &clients, link) {
+-			if (c->mon != m)
+-				continue;
+ 			occ |= c->tags;
+ 			if (c->isurgent)
+ 				urg |= c->tags;
+@@ -2342,11 +2367,15 @@ startdrag(struct wl_listener *listener, void *data)
+ void
+ tag(const Arg *arg)
+ {
++	Monitor *m;
+ 	Client *sel = focustop(selmon);
+ 	if (sel && arg->ui & TAGMASK) {
+ 		sel->tags = arg->ui & TAGMASK;
+ 		focusclient(focustop(selmon), 1);
+-		arrange(selmon);
++		wl_list_for_each(m, &mons, link) {
++			attachclients(m);
++			arrange(m);
++		}
+ 	}
+ 	printstatus();
+ }
+@@ -2354,9 +2383,15 @@ tag(const Arg *arg)
+ void
+ tagmon(const Arg *arg)
+ {
++	Monitor *m;
+ 	Client *sel = focustop(selmon);
+-	if (sel)
++	if (sel) {
+ 		setmon(sel, dirtomon(arg->i), 0);
++		wl_list_for_each(m, &mons, link) {
++			arrange(m);
++		}
++		focusclient(focustop(sel->mon), 1);
++	}
+ }
+ 
+ void
+@@ -2412,13 +2447,19 @@ togglefullscreen(const Arg *arg)
+ void
+ toggletag(const Arg *arg)
+ {
++	Monitor *m;
+ 	unsigned int newtags;
+ 	Client *sel = focustop(selmon);
+ 	if (!sel)
+ 		return;
+ 	newtags = sel->tags ^ (arg->ui & TAGMASK);
+ 	if (newtags) {
++		wl_list_for_each(m, &mons, link)
++			if (m !=selmon && newtags & m->tagset[m->seltags])
++				return;
++
+ 		sel->tags = newtags;
++		attachclients(selmon);
+ 		focusclient(focustop(selmon), 1);
+ 		arrange(selmon);
+ 	}
+@@ -2428,10 +2469,16 @@ toggletag(const Arg *arg)
+ void
+ toggleview(const Arg *arg)
+ {
++	Monitor *m;
+ 	unsigned int newtagset = selmon ? selmon->tagset[selmon->seltags] ^ (arg->ui & TAGMASK) : 0;
+ 
+ 	if (newtagset) {
++		wl_list_for_each(m, &mons, link)
++			if (m !=selmon && newtagset & m->tagset[m->seltags])
++				return;
++
+ 		selmon->tagset[selmon->seltags] = newtagset;
++		attachclients(selmon);
+ 		focusclient(focustop(selmon), 1);
+ 		arrange(selmon);
+ 	}
+@@ -2597,13 +2644,36 @@ urgent(struct wl_listener *listener, void *data)
+ void
+ view(const Arg *arg)
+ {
++	Monitor *m, *origm = selmon;
++	unsigned int newtags = selmon->tagset[selmon->seltags ^ 1];
++
+ 	if (!selmon || (arg->ui & TAGMASK) == selmon->tagset[selmon->seltags])
+ 		return;
+-	selmon->seltags ^= 1; /* toggle sel tagset */
++
++	/* swap tags when trying to display a tag from another monitor */
+ 	if (arg->ui & TAGMASK)
+-		selmon->tagset[selmon->seltags] = arg->ui & TAGMASK;
+-	focusclient(focustop(selmon), 1);
+-	arrange(selmon);
++		newtags = arg->ui & TAGMASK;
++	wl_list_for_each(m, &mons, link) {
++		if (m != selmon && newtags & m->tagset[m->seltags]) {
++			/* prevent displaying all tags (MODKEY-0) when multiple monitors
++			 * are connected */
++			if (newtags & selmon->tagset[selmon->seltags])
++				return;
++			m->seltags ^= 1;
++			m->tagset[m->seltags] = selmon->tagset[selmon->seltags];
++			attachclients(m);
++			focusclient(focustop(m), 1);
++			arrange(m);
++			break;
++		}
++	}
++
++	origm->seltags ^= 1; /* toggle sel tagset */
++	if (arg->ui & TAGMASK)
++		origm->tagset[origm->seltags] = arg->ui & TAGMASK;
++	attachclients(origm);
++	focusclient(focustop(origm), 1);
++	arrange(origm);
+ 	printstatus();
+ }
+ 
