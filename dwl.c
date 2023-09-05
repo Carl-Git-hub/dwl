@@ -1530,6 +1530,12 @@ inputdevice(struct wl_listener *listener, void *data)
 	 * available. */
 	struct wlr_input_device *device = data;
 	uint32_t caps;
+	struct libinput_device *libinput_device = (struct libinput_device*)wlr_libinput_get_device_handle(device);
+
+	if (device->vendor == 1356 && device->product == 3302) {
+		libinput_device_config_send_events_set_mode(libinput_device, LIBINPUT_CONFIG_SEND_EVENTS_DISABLED);
+		return;
+	}
 
 	switch (device->type) {
 	case WLR_INPUT_DEVICE_KEYBOARD:
