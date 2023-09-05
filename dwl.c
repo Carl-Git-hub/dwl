@@ -504,7 +504,6 @@ arrange(Monitor *m)
 		m->lt[m->sellt]->arrange(m);
 	motionnotify(0);
 
-	if (c && mousefollowsfocus) warpcursortofocus(c);
 	if (noidlefullscreen && is_any_client_fullscreen) {
 		wlr_idle_notifier_v1_set_inhibited(idle_notifier, 1);
     } else {
@@ -1372,6 +1371,8 @@ focusclient(Client *c, int lift)
 
 	c->opacity = foreground_opacity;
 	wlr_scene_node_for_each_buffer(&c->scene_surface->node, scenebuffersetopacity, c);
+
+	if (c && mousefollowsfocus) warpcursortofocus(c);
 }
 
 void
