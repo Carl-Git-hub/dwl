@@ -20,8 +20,8 @@ static const float foreground_opacity      = 1;
 
 /* Autostart */
 static const char *const autostart[] = {
-	"wlr-randr", "--output", "DP-3", "--mode", "2560x1440@165.080002", "--pos", "0,0", NULL,
-	"wlr-randr", "--output", "DP-4", "--mode", "2560x1440@59.951000", "--pos", "2560,0", NULL,
+	// "wlr-randr", "--output", "DP-3", "--mode", "2560x1440@165.080002", "--pos", "0,0", NULL,
+	// "wlr-randr", "--output", "DP-4", "--mode", "2560x1440@59.951000", "--pos", "2560,0", NULL,
 	"systemctl", "--user", "import-environment", "WAYLAND_DISPLAY", "XDG_CURRENT_DESKTOP", NULL,
         "dbus-update-activation-environment", "--systemd", "WAYLAND_DISPLAY", "XDG_CURRENT_DESKTOP=dwl", NULL,
         "waybar", NULL,
