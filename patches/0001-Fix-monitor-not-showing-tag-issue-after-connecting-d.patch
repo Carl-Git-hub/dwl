@@ -1,0 +1,25 @@
+From 853f25029acf6bb78e1697782bd51a5779132277 Mon Sep 17 00:00:00 2001
+From: Carl <1953433+Carl-Git-hub@users.noreply.github.com>
+Date: Wed, 6 Sep 2023 18:10:00 +1000
+Subject: [PATCH] Fix monitor not showing tag issue after
+ connecting/disconnecting
+
+---
+ dwl.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/dwl.c b/dwl.c
+index 0b8bbde..98dfd47 100644
+--- a/dwl.c
++++ b/dwl.c
+@@ -2906,6 +2906,7 @@ updatemons(struct wl_listener *listener, void *data)
+ 		/* Calculate the effective monitor geometry to use for clients */
+ 		arrangelayers(m);
+ 		/* Don't move clients to the left output when plugging monitors */
++		attachclients(m);
+ 		arrange(m);
+ 
+ 		config_head->state.enabled = 1;
+-- 
+2.41.0
+
