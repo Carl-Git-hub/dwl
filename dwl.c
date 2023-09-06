@@ -2906,6 +2906,7 @@ updatemons(struct wl_listener *listener, void *data)
 		/* Calculate the effective monitor geometry to use for clients */
 		arrangelayers(m);
 		/* Don't move clients to the left output when plugging monitors */
+		attachclients(m);
 		arrange(m);
 
 		config_head->state.enabled = 1;
