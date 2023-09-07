@@ -30,7 +30,6 @@ static const char *const autostart[] = {
 	"fcitx5", NULL,
         "nm-applet", NULL,
         "dunst", NULL,
-        "imwheel", NULL,
 	"/usr/libexec/polkit-gnome-authentication-agent-1", NULL,
         "dropbox", "start", "-i", NULL,
         "wljoywake", NULL,
