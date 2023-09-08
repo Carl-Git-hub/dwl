@@ -3239,6 +3239,11 @@ warpcursortofocus(Client *c) {
 	int max_x = 0, max_y = 0;
 	Monitor *m;
 	struct wlr_box m_area;
+
+	if (cursor_mode == CurPressed) {
+		return;
+	}
+
 	wl_list_for_each(m, &mons, link) {
 		m_area = m->m;
 		if ((m_area.x + m_area.width) > max_x) {
