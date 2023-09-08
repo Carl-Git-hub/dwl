@@ -3172,8 +3172,10 @@ updatetitle(struct wl_listener *listener, void *data)
 	title = client_get_title(c);
 	appid = client_get_appid(c);
 	if (c->foreign_toplevel) {
-		wlr_foreign_toplevel_handle_v1_set_title(c->foreign_toplevel, title);
-		if (appid != NULL) {
+		if (title) {
+			wlr_foreign_toplevel_handle_v1_set_title(c->foreign_toplevel, title);
+		}
+		if (appid) {
 			wlr_foreign_toplevel_handle_v1_set_app_id(c->foreign_toplevel, appid);
 		}
 	}
