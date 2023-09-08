@@ -21,6 +21,7 @@
 #include <wlr/types/wlr_data_control_v1.h>
 #include <wlr/types/wlr_data_device.h>
 #include <wlr/types/wlr_export_dmabuf_v1.h>
+#include <wlr/types/wlr_foreign_toplevel_management_v1.h>
 #include <wlr/types/wlr_gamma_control_v1.h>
 #include <wlr/types/wlr_idle.h>
 #include <wlr/types/wlr_idle_inhibit_v1.h>
@@ -126,6 +127,9 @@ typedef struct {
 	uint32_t tags;
 	int isfloating, isurgent, isfullscreen;
 	uint32_t resize; /* configure serial of a pending resize */
+	struct wlr_foreign_toplevel_handle_v1 *foreign_toplevel;
+	struct wl_listener foreign_activate_request;
+	struct wl_listener foreign_close_request;
 } Client;
 
 typedef struct {
@@ -367,6 +371,7 @@ static struct wlr_box sgeom;
 static struct wl_list mons;
 static Monitor *selmon;
 
+static struct wlr_foreign_toplevel_manager_v1 *foreign_toplevel_manager;
 /* global event handlers */
 static struct wl_listener cursor_axis = {.notify = axisnotify};
 static struct wl_listener cursor_button = {.notify = buttonpress};
@@ -726,8 +731,9 @@ closemon(Monitor *m)
 		if (c->isfloating && c->geom.x > m->m.width)
 			resize(c, (struct wlr_box){.x = c->geom.x - m->w.width, .y = c->geom.y,
 				.width = c->geom.width, .height = c->geom.height}, 0);
-		if (c->mon == m)
+		if (c->mon == m) {
 			setmon(c, selmon, c->tags);
+		}
 	}
 	focusclient(focustop(selmon), 1);
 	printstatus();
@@ -1162,6 +1168,9 @@ destroynotify(struct wl_listener *listener, void *data)
 		wl_list_remove(&c->activate.link);
 	}
 #endif
+	if (c->foreign_toplevel) {
+		wlr_foreign_toplevel_handle_v1_destroy(c->foreign_toplevel);
+	}
 	free(c);
 }
 
@@ -1250,8 +1259,10 @@ focusclient(Client *c, int lift)
 		} else if (old_c && !client_is_unmanaged(old_c) && (!c || !client_wants_focus(c))) {
 			for (i = 0; i < 4; i++)
 				wlr_scene_rect_set_color(old_c->border[i], bordercolor);
-
 			client_activate_surface(old, 0);
+			if (old_c->foreign_toplevel) {
+				wlr_foreign_toplevel_handle_v1_set_activated(old_c->foreign_toplevel, 0);
+			}
 		}
 	}
 	printstatus();
@@ -1267,6 +1278,10 @@ focusclient(Client *c, int lift)
 
 	/* Have a client, so focus its top-level wlr_surface */
 	client_notify_enter(client_surface(c), wlr_seat_get_keyboard(seat));
+
+	if (c && c->foreign_toplevel) {
+		wlr_foreign_toplevel_handle_v1_set_activated(c->foreign_toplevel, 1);
+	}
 
 	/* Activate the new client */
 	client_activate_surface(client_surface(c), 1);
@@ -1495,8 +1510,9 @@ void
 killclient(const Arg *arg)
 {
 	Client *sel = focustop(selmon);
-	if (sel)
+	if (sel) {
 		client_send_close(sel);
+	}
 }
 
 void
@@ -1578,6 +1594,9 @@ mapnotify(struct wl_listener *listener, void *data)
 	c->geom.width += 2 * c->bw;
 	c->geom.height += 2 * c->bw;
 
+	/* Foreign top level */
+	c->foreign_toplevel = wlr_foreign_toplevel_handle_v1_create(foreign_toplevel_manager);
+
 	/* Insert this client into client lists. */
 	wl_list_insert(&clients, &c->link);
 	wl_list_insert(&fstack, &c->flink);
@@ -1593,6 +1612,15 @@ mapnotify(struct wl_listener *listener, void *data)
 		setmon(c, p->mon, p->tags);
 	} else {
 		applyrules(c);
+	}
+	if (c && c->foreign_toplevel && selmon && selmon->wlr_output) {
+		wlr_foreign_toplevel_handle_v1_output_enter(c->foreign_toplevel, selmon->wlr_output);
+		if (client_get_title(c)) {
+			wlr_foreign_toplevel_handle_v1_set_title(c->foreign_toplevel, client_get_title(c));
+		}
+		if (client_get_appid(c) != NULL) {
+			wlr_foreign_toplevel_handle_v1_set_app_id(c->foreign_toplevel, client_get_appid(c));
+		}
 	}
 	printstatus();
 
@@ -2094,13 +2122,20 @@ setmon(Client *c, Monitor *m, uint32_t newtags)
 	c->prev = c->geom;
 
 	/* Scene graph sends surface leave/enter events on move and resize */
-	if (oldmon)
+	if (oldmon) {
 		arrange(oldmon);
+		if (c->foreign_toplevel && oldmon->wlr_output) {
+			wlr_foreign_toplevel_handle_v1_output_leave(c->foreign_toplevel, oldmon->wlr_output);
+		}
+	}
 	if (m) {
 		/* Make sure window actually overlaps with the monitor */
 		resize(c, c->geom, 0);
 		c->tags = newtags ? newtags : m->tagset[m->seltags]; /* assign tags of target monitor */
 		setfullscreen(c, c->isfullscreen); /* This will call arrange(c->mon) */
+		if (c->foreign_toplevel && m && m->wlr_output) {
+			wlr_foreign_toplevel_handle_v1_output_enter(c->foreign_toplevel, m->wlr_output);
+		}
 	}
 	focusclient(focustop(selmon), 1);
 }
@@ -2184,6 +2219,7 @@ setup(void)
 	wlr_viewporter_create(dpy);
 	wlr_single_pixel_buffer_manager_v1_create(dpy);
 	wlr_subcompositor_create(dpy);
+	foreign_toplevel_manager = wlr_foreign_toplevel_manager_v1_create(dpy);
 
 	/* Initializes the interface used to implement urgency hints */
 	activation = wlr_xdg_activation_v1_create(dpy);
@@ -2575,9 +2611,20 @@ updatemons(struct wl_listener *listener, void *data)
 void
 updatetitle(struct wl_listener *listener, void *data)
 {
+	const char *appid, *title;
 	Client *c = wl_container_of(listener, c, set_title);
 	if (c == focustop(c->mon))
 		printstatus();
+	title = client_get_title(c);
+	appid = client_get_appid(c);
+	if (c->foreign_toplevel) {
+		if (title) {
+			wlr_foreign_toplevel_handle_v1_set_title(c->foreign_toplevel, title);
+		}
+		if (appid) {
+			wlr_foreign_toplevel_handle_v1_set_app_id(c->foreign_toplevel, appid);
+		}
+	}
 }
 
 void
