@@ -2450,6 +2450,8 @@ void
 setfloating(Client *c, int floating)
 {
 	c->isfloating = floating;
+	if (!c->mon)
+		return;
 	wlr_scene_node_reparent(&c->scene->node, layers[c->isfloating ? LyrFloat : LyrTile]);
 	arrange(c->mon);
 	printstatus();
@@ -2542,6 +2544,7 @@ setmon(Client *c, Monitor *m, uint32_t newtags)
 		if (c->foreign_toplevel && m && m->wlr_output) {
 			wlr_foreign_toplevel_handle_v1_output_enter(c->foreign_toplevel, m->wlr_output);
 		}
+		setfloating(c, c->isfloating);
 	}
 	focusclient(focustop(selmon), 1);
 }
