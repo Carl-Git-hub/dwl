@@ -1,0 +1,234 @@
+From 860dfae539044bc3f46d8d46f1998c5e96cfc15f Mon Sep 17 00:00:00 2001
+From: Carl <1953433+Carl-Git-hub@users.noreply.github.com>
+Date: Mon, 4 Sep 2023 22:40:43 +1000
+Subject: [PATCH] Do not take into account of disabled monitors
+
+Mouse follows focus
+
+Mouse follows focus patch
+---
+ config.def.h                           |   1 +
+ dwl.c                                  |  48 ++++++++++-
+ patches/0001-Mouse-follows-focus.patch | 108 +++++++++++++++++++++++++
+ 3 files changed, 156 insertions(+), 1 deletion(-)
+ create mode 100644 patches/0001-Mouse-follows-focus.patch
+
+diff --git a/config.def.h b/config.def.h
+index 1677f6f..957f2ca 100644
+--- a/config.def.h
++++ b/config.def.h
+@@ -1,5 +1,6 @@
+ /* appearance */
+ static const int sloppyfocus               = 1;  /* focus follows mouse */
++static const int mousefollowsfocus         = 1;  /* mouse follows focus */
+ static const int bypass_surface_visibility = 0;  /* 1 means idle inhibitors will disable idle tracking even if it's surface isn't visible  */
+ static const unsigned int borderpx         = 1;  /* border pixel of windows */
+ static const float bordercolor[]           = {0.5, 0.5, 0.5, 1.0};
+diff --git a/dwl.c b/dwl.c
+index 4ff5c37..48f671b 100644
+--- a/dwl.c
++++ b/dwl.c
+@@ -314,6 +314,7 @@ static void updatetitle(struct wl_listener *listener, void *data);
+ static void urgent(struct wl_listener *listener, void *data);
+ static void view(const Arg *arg);
+ static void virtualkeyboard(struct wl_listener *listener, void *data);
++static void warpcursortofocus(Client *c);
+ static Monitor *xytomon(double x, double y);
+ static void xytonode(double x, double y, struct wlr_surface **psurface,
+ 		Client **pc, LayerSurface **pl, double *nx, double *ny);
+@@ -487,6 +488,8 @@ arrange(Monitor *m)
+ 	if (m->lt[m->sellt]->arrange)
+ 		m->lt[m->sellt]->arrange(m);
+ 	motionnotify(0);
++
++	if (c && mousefollowsfocus) warpcursortofocus(c);
+ 	checkidleinhibitor(NULL);
+ }
+ 
+@@ -1276,11 +1279,18 @@ void
+ focusmon(const Arg *arg)
+ {
+ 	int i = 0, nmons = wl_list_length(&mons);
++	Client *c = NULL;
+ 	if (nmons)
+ 		do /* don't switch to disabled mons */
+ 			selmon = dirtomon(arg->i);
+ 		while (!selmon->wlr_output->enabled && i++ < nmons);
+-	focusclient(focustop(selmon), 1);
++
++	c = focustop(selmon);
++	focusclient(c, 1);
++
++	if (mousefollowsfocus) {
++		warpcursortofocus(c);
++	}
+ }
+ 
+ void
+@@ -1307,6 +1317,7 @@ focusstack(const Arg *arg)
+ 	}
+ 	/* If only one client is visible on selmon, then c == sel */
+ 	focusclient(c, 1);
++	if (mousefollowsfocus) warpcursortofocus(c);
+ }
+ 
+ /* We probably should change the name of this, it sounds like
+@@ -2613,6 +2624,41 @@ virtualkeyboard(struct wl_listener *listener, void *data)
+ 	createkeyboard(&keyboard->keyboard);
+ }
+ 
++void
++warpcursortofocus(Client *c) {
++	int max_x = 0, max_y = 0;
++	Monitor *m;
++	struct wlr_box m_area;
++	if (cursor_mode == CurPressed) {
++		return;
++	}
++
++	wl_list_for_each(m, &mons, link) {
++		if (!m->wlr_output->enabled) {
++			continue;
++		}
++		m_area = m->m;
++		if ((m_area.x + m_area.width) > max_x) {
++			max_x = (m_area.x + m_area.width);
++		}
++		if ((m_area.y + m_area.height) > max_y) {
++			max_y = (m_area.y + m_area.height);
++		}
++	}
++	if (c) {
++
++	struct wlr_box cg = c->geom;
++	if (!VISIBLEON(c, selmon)) return;
++	wlr_cursor_warp_absolute(cursor, NULL,
++		((double)cg.x + (double)cg.width / 2.0) / (double)max_x,
++		((double)cg.y + (double)cg.height / 2.0) / (double)max_y);
++	} else {
++		wlr_cursor_warp_absolute(cursor, NULL,
++			((double)selmon->m.x + ((double)selmon->m.width) / 2.0) / (double)max_x,
++			((double)selmon->m.y + ((double)selmon->m.height) / 2.0) / (double)max_y);
++	}
++}
++
+ Monitor *
+ xytomon(double x, double y)
+ {
+diff --git a/patches/0001-Mouse-follows-focus.patch b/patches/0001-Mouse-follows-focus.patch
+new file mode 100644
+index 0000000..23c56e7
+--- /dev/null
++++ b/patches/0001-Mouse-follows-focus.patch
+@@ -0,0 +1,108 @@
++From df15eae9d7f426f59922d3eea6c5d0572f59d30c Mon Sep 17 00:00:00 2001
++From: Carl <1953433+Carl-Git-hub@users.noreply.github.com>
++Date: Mon, 4 Sep 2023 22:40:07 +1000
++Subject: [PATCH] Mouse follows focus
++
++---
++ config.def.h |  1 +
++ dwl.c        | 41 ++++++++++++++++++++++++++++++++++++++++-
++ 2 files changed, 41 insertions(+), 1 deletion(-)
++
++diff --git a/config.def.h b/config.def.h
++index 1677f6f..957f2ca 100644
++--- a/config.def.h
+++++ b/config.def.h
++@@ -1,5 +1,6 @@
++ /* appearance */
++ static const int sloppyfocus               = 1;  /* focus follows mouse */
+++static const int mousefollowsfocus         = 1;  /* mouse follows focus */
++ static const int bypass_surface_visibility = 0;  /* 1 means idle inhibitors will disable idle tracking even if it's surface isn't visible  */
++ static const unsigned int borderpx         = 1;  /* border pixel of windows */
++ static const float bordercolor[]           = {0.5, 0.5, 0.5, 1.0};
++diff --git a/dwl.c b/dwl.c
++index 4ff5c37..05c5d61 100644
++--- a/dwl.c
+++++ b/dwl.c
++@@ -314,6 +314,7 @@ static void updatetitle(struct wl_listener *listener, void *data);
++ static void urgent(struct wl_listener *listener, void *data);
++ static void view(const Arg *arg);
++ static void virtualkeyboard(struct wl_listener *listener, void *data);
+++static void warpcursortofocus(Client *c);
++ static Monitor *xytomon(double x, double y);
++ static void xytonode(double x, double y, struct wlr_surface **psurface,
++ 		Client **pc, LayerSurface **pl, double *nx, double *ny);
++@@ -487,6 +488,8 @@ arrange(Monitor *m)
++ 	if (m->lt[m->sellt]->arrange)
++ 		m->lt[m->sellt]->arrange(m);
++ 	motionnotify(0);
+++
+++	if (c && mousefollowsfocus) warpcursortofocus(c);
++ 	checkidleinhibitor(NULL);
++ }
++ 
++@@ -1276,11 +1279,18 @@ void
++ focusmon(const Arg *arg)
++ {
++ 	int i = 0, nmons = wl_list_length(&mons);
+++	Client *c = NULL;
++ 	if (nmons)
++ 		do /* don't switch to disabled mons */
++ 			selmon = dirtomon(arg->i);
++ 		while (!selmon->wlr_output->enabled && i++ < nmons);
++-	focusclient(focustop(selmon), 1);
+++
+++	c = focustop(selmon);
+++	focusclient(c, 1);
+++
+++	if (mousefollowsfocus) {
+++		warpcursortofocus(c);
+++	}
++ }
++ 
++ void
++@@ -1307,6 +1317,7 @@ focusstack(const Arg *arg)
++ 	}
++ 	/* If only one client is visible on selmon, then c == sel */
++ 	focusclient(c, 1);
+++	if (mousefollowsfocus) warpcursortofocus(c);
++ }
++ 
++ /* We probably should change the name of this, it sounds like
++@@ -2613,6 +2624,34 @@ virtualkeyboard(struct wl_listener *listener, void *data)
++ 	createkeyboard(&keyboard->keyboard);
++ }
++ 
+++void
+++warpcursortofocus(Client *c) {
+++	int max_x = 0, max_y = 0;
+++	Monitor *m;
+++	struct wlr_box m_area;
+++	wl_list_for_each(m, &mons, link) {
+++		m_area = m->m;
+++		if ((m_area.x + m_area.width) > max_x) {
+++			max_x = (m_area.x + m_area.width);
+++		}
+++		if ((m_area.y + m_area.height) > max_y) {
+++			max_y = (m_area.y + m_area.height);
+++		}
+++	}
+++	if (c) {
+++
+++	struct wlr_box cg = c->geom;
+++	if (!VISIBLEON(c, selmon)) return;
+++	wlr_cursor_warp_absolute(cursor, NULL,
+++		((double)cg.x + (double)cg.width / 2.0) / (double)max_x,
+++		((double)cg.y + (double)cg.height / 2.0) / (double)max_y);
+++	} else {
+++		wlr_cursor_warp_absolute(cursor, NULL,
+++			((double)selmon->m.x + ((double)selmon->m.width) / 2.0) / (double)max_x,
+++			((double)selmon->m.y + ((double)selmon->m.height) / 2.0) / (double)max_y);
+++	}
+++}
+++
++ Monitor *
++ xytomon(double x, double y)
++ {
++-- 
++2.41.0
++
+-- 
+2.41.0
+
