@@ -3247,6 +3247,9 @@ warpcursortofocus(Client *c) {
 	}
 
 	wl_list_for_each(m, &mons, link) {
+		if (!m->wlr_output->enabled) {
+			continue;
+		}
 		m_area = m->m;
 		if ((m_area.x + m_area.width) > max_x) {
 			max_x = (m_area.x + m_area.width);
