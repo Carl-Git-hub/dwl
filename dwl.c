@@ -3090,6 +3090,10 @@ updatemons(struct wl_listener *listener, void *data)
 	struct wlr_output_configuration_head_v1 *config_head;
 	Monitor *m;
 
+	if (locked) {
+		return;
+	}
+
 	/* First remove from the layout the disabled monitors */
 	wl_list_for_each(m, &mons, link) {
 		if (m->wlr_output->enabled)
