@@ -1,0 +1,27 @@
+From 55599ba34d19ca0493ed8844653ce5f59887ac78 Mon Sep 17 00:00:00 2001
+From: Carl <1953433+Carl-Git-hub@users.noreply.github.com>
+Date: Sat, 16 Sep 2023 21:35:05 +1000
+Subject: [PATCH] Disable layout manipulation when session is locked
+
+---
+ dwl.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/dwl.c b/dwl.c
+index b986c38..31226af 100644
+--- a/dwl.c
++++ b/dwl.c
+@@ -3090,6 +3090,10 @@ updatemons(struct wl_listener *listener, void *data)
+ 	struct wlr_output_configuration_head_v1 *config_head;
+ 	Monitor *m;
+ 
++	if (locked) {
++		return;
++	}
++
+ 	/* First remove from the layout the disabled monitors */
+ 	wl_list_for_each(m, &mons, link) {
+ 		if (m->wlr_output->enabled)
+-- 
+2.41.0
+
